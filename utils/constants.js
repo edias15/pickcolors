@@ -4,5 +4,6 @@ module.exports = {
   HANDLE_SAVE_DATA: 'handle-save-data',
   SAVE_DATA_IN_STORAGE: 'save-data-in-storage',
   HANDLE_REMOVE_DATA: 'handle-remove-data',
+  UPDATE_DATA_FROM_STORAGE: 'update-data-from-storage',
   REMOVE_DATA_FROM_STORAGE: 'remove-data-from-storage'
 }

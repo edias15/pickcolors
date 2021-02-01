@@ -1,6 +1,6 @@
 'use strict';
 
-const { app, ipcMain, BrowserWindow } = require('electron');
+const { app, ipcMain, dialog, BrowserWindow, Menu } = require('electron');
 const path = require('path')
 const url = require('url')
 const {
@@ -8,13 +8,14 @@ const {
   FETCH_DATA_FROM_STORAGE, 
   HANDLE_SAVE_DATA, 
   SAVE_DATA_IN_STORAGE, 
-  REMOVE_DATA_FROM_STORAGE, 
+  REMOVE_DATA_FROM_STORAGE,
   HANDLE_REMOVE_DATA}
   = require("./utils/constants")
 const storage = require("electron-json-storage")
 
-let mainWindow, colorsToTrack;
+const isMac = process.platform === 'darwin'
 
+let mainWindow, colorsToTrack, HexDesc
 // Keep a reference for dev mode
 let dev = false;
 if ( process.defaultApp || /[\\/]electron-prebuilt[\\/]/.test(process.execPath) || /[\\/]electron[\\/]/.test(process.execPath) ) {
@@ -22,17 +23,20 @@ if ( process.defaultApp || /[\\/]electron-prebuilt[\\/]/.test(process.execPath) 
 }
 
 const defaultDataPath = storage.getDefaultDataPath();
-// On Mac: /Users/[username]/Library/ApplicationSupport/expense-tracker-electron/storage
+// On Mac: /Users/[username]/Library/ApplicationSupport/pickcolors/storage
 
 function createWindow() {
   mainWindow = new BrowserWindow({
-    width: 1024,
-    height: 768,
-    show: false,
-    con: __dirname + "/assets/icon/mac/pickcolors.icns"
+    width: 800,
+    height: 720,
+    title: "Pickcolors",
+    icon: __dirname + "/assets/icon/mac/pickcolors.icns",
+    webPreferences: {
+      nodeIntegration: true
+    }
   });
 
-  let indexPath;
+  let indexPath
   if ( dev && process.argv.indexOf('--noDevServer') === -1 ) {
     indexPath = url.format({
       protocol: 'http:',
@@ -48,7 +52,7 @@ function createWindow() {
     });
   }
   mainWindow.loadURL( indexPath );
-
+  
   mainWindow.once('ready-to-show', () => {
     mainWindow.show();
     if ( dev ) {
@@ -56,6 +60,21 @@ function createWindow() {
     }
   });
 
+  const templateMenu = [
+    {
+      label: "File",
+      submenu: [
+        {
+          label: "Quit",
+          role: isMac ? "quit" : "close"
+        }
+      ]
+    }
+  ]
+  
+  const menu = Menu.buildFromTemplate(templateMenu)
+  Menu.setApplicationMenu(menu)
+  
   mainWindow.webContents.send("info", {msg: "hello from main process"})
 
   mainWindow.on('closed', function() {
@@ -66,7 +85,7 @@ function createWindow() {
 app.on('ready', createWindow);
 
 app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
+  if (!isMac) {
     app.quit();
   }
 });
@@ -77,10 +96,8 @@ app.on('activate', () => {
   }
 });
 
-// ipcMain methods are how we interact between the window and (this) main program
-
 ipcMain.on(FETCH_DATA_FROM_STORAGE, (event, message) => {
-  console.log("Main received: FETCH_DATA_FROM_STORAGE with message:", message)
+  console.log("Main received: FETCH_DATA_FROM_STORAGE with message --> :", message)
   storage.get(message, (error, data) => {
     colorsToTrack = JSON.stringify(data) === '{}' ? [] : data;
     if (error) {
@@ -89,21 +106,16 @@ ipcMain.on(FETCH_DATA_FROM_STORAGE, (event, message) => {
         message: "colorsToTrack not returned",
       })
     } else {
-      // Send message back to window
       mainWindow.send(HANDLE_FETCH_DATA, {
         success: true,
-        message: colorsToTrack, // do something with the data
+        message: colorsToTrack,
       })
     }
   })
 })
 
 ipcMain.on(SAVE_DATA_IN_STORAGE, (event, message) => {
-  console.log("Main received: SAVE_DATA_IN_STORAGE")
-  // update the colorsToTrack array.
   colorsToTrack.push(message)
-  // Save colorsToTrack to storage
-  console.log("Main received: SAVE_DATA_IN_STORAGE ---> ", colorsToTrack)
   storage.set("colorsToTrack", colorsToTrack, (error) => {
     if (error) {
       console.log("We errored! What was data?")
@@ -119,14 +131,10 @@ ipcMain.on(SAVE_DATA_IN_STORAGE, (event, message) => {
       })
     }
   })
-});
+})
 
-// Receive a REMOVE_DATA_FROM_STORAGE call from renderer
 ipcMain.on(REMOVE_DATA_FROM_STORAGE, (event, message) => {
-  console.log('Main Received: REMOVE_DATA_FROM_STORAGE ->>', message)
-  // Update the items to Track array.
-  colorsToTrack = colorsToTrack.filter(color => (color.hex+color.desc) !== message)
-  // Save colorsToTrack to storage
+  colorsToTrack = colorsToTrack.filter(color => (color.desc+color.hex) !== message)
   storage.set("colorsToTrack", colorsToTrack, (error) => {
     if (error) {
       console.log("We errored! What was data?")

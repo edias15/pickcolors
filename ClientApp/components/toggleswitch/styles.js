@@ -13,7 +13,7 @@ const SwitchLabel = styled.label`
   justify-content: space-between;
   cursor: pointer;
   width: 60px;
-  height: 30px;
+  height: 27px;
   border-radius: 90px;
   border: 1px solid gray;
   position: relative;

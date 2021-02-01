@@ -1,9 +1,10 @@
-import React from 'react';
+import React from 'react'
 import Table from "react-bootstrap/Table"
-import Button from "react-bootstrap/Button";
+import Button from "react-bootstrap/Button"
 import {removeDataFromStorage} from "../../renderer.js"
+import { Container } from "./styles.js"
 
-const List = ({colorsToTrack}) => {
+function List({ colorsToTrack }) {
   return (
     <Table striped bordered hover>
       <thead>
@@ -16,15 +17,17 @@ const List = ({colorsToTrack}) => {
       <tbody>
         {colorsToTrack.map((a, i) => {
           return (
-            <tr key={i+1}>
-              <td>{i+1}</td>
+            <tr key={i + 1}>
+              <td>{i + 1}</td>
               <td>{colorsToTrack[i].hex}</td>
               <td>{colorsToTrack[i].desc}</td>
               <td>
-                <Button
-                  variant="outline-danger"
-                  onClick={() => removeDataFromStorage(colorsToTrack[i].hex+colorsToTrack[i].desc)}
-                >Remove</Button>
+                <Container>
+                  <Button
+                    variant="outline-danger"
+                    onClick={() => removeDataFromStorage(colorsToTrack[i].desc + colorsToTrack[i].hex)}
+                  >Remove</Button>
+                </Container>
               </td>
             </tr>
           )
@@ -32,6 +35,6 @@ const List = ({colorsToTrack}) => {
       </tbody>
     </Table>
   )
-};
+}
 
 export default List;
